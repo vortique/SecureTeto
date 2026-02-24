@@ -1,0 +1,6 @@
+# Ignore object files
+*.o
+bin/
+
+# Ignore build artifacts
+build/
