@@ -7,18 +7,21 @@
 #define MAX_FILENAME_LENGTH 512
 
 #pragma pack(push, 1)
-typedef struct {
-    char     magic[4]; // "SECU"
+typedef struct
+{
+    char     magic[4]; // "TETO"
     uint32_t version;
     uint64_t file_count;
     uint64_t file_table_offset;
     uint64_t data_table_offset;
 } archive_header_t;
 
-typedef struct {
-    char filename[MAX_FILENAME_LENGTH];
-    uint64_t offset; // is 0 if dir
-    uint64_t size;   // is 0 if dir
+typedef struct
+{
+    char     filename[MAX_FILENAME_LENGTH];
+    uint64_t offset;
+    uint64_t size;
+    uint8_t  type; // 0 for file, 1 for directory
 } archive_file_entry_t;
 #pragma pack(pop)
 
@@ -39,7 +42,7 @@ int create_archive(const char *archive_path, const char *dir_path);
  * @param rel_path The relative path.
  * @return 0 on success, error code otherwise.
  */
-int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uint64_t entry_pos, const char *path, const char *rel_path);
+int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uint64_t *entry_pos, const char *path, const char *rel_path);
 
 /**
  * @brief Scans the directory and counts the number of entries.
@@ -54,5 +57,46 @@ uint64_t scan_entry_count(const char *path);
  * @return 0 on success.
  */
 int init_header(archive_header_t *header);
+
+/**
+ * @brief Extracts the contents of an archive to the specified directory.
+ * @param archive_path The path to the archive file.
+ * @param dst_dir The destination directory to extract to.
+ * @return 0 on success, error code otherwise.
+ */
+int extract_archive(const char *archive_path, const char *dst_dir);
+
+/**
+ * @brief Extracts entries from the archive.
+ * @param header Pointer to the archive header.
+ * @param archive_file The archive file pointer.
+ * @param dst_dir The destination directory.
+ * @return 0 on success, error code otherwise.
+ */
+int extract_entry(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+
+/**
+ * @brief Creates directories from the archive entries.
+ * @param header Pointer to the archive header.
+ * @param archive_file The archive file pointer.
+ * @param dst_dir The destination directory.
+ * @return 0 on success, error code otherwise.
+ */
+int create_dirs(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+
+/**
+ * @brief Writes files from the archive to the destination.
+ * @param header Pointer to the archive header.
+ * @param archive_file The archive file pointer.
+ * @param dst_dir The destination directory.
+ * @return 0 on success, error code otherwise.
+ */
+int write_files(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+
+/**
+ * @brief Creates directories recursively.
+ * @param path The path to create.
+ */
+void create_directory_recursive(const char *path);
 
 #endif // ARCHIVER_H
