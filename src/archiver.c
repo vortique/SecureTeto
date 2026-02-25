@@ -30,7 +30,7 @@ int create_archive(const char *archive_path, const char *dir_path) {
 
     header.data_table_offset = (sizeof(archive_header_t) + (sizeof(archive_file_entry_t) * entry_count));
 
-    uint64_t *entry_pos = malloc(sizeof(uint64_t));
+    uint64_t *entry_pos = malloc(sizeof(uint64_t)); // for global tracking of file entry position
     *entry_pos = header.file_table_offset;
     
     fseek(arch, header.data_table_offset, SEEK_SET);

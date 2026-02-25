@@ -4,3 +4,7 @@ bin/
 
 # Ignore build artifacts
 build/
+
+# Python related ignores
+venv/
+*/__pycache__/
