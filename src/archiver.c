@@ -73,8 +73,6 @@ int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uin
         snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
 
         if(stat(full_path, &file_stat) == 0) {
-            header->file_count++;
-
             if (S_ISREG(file_stat.st_mode)) {
                 // Create relative path for the file entry
                 snprintf(relative_path, sizeof(relative_path), "%s%s", 
@@ -91,6 +89,7 @@ int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uin
                 archive_file_entry_t file_entry;
                 strncpy(file_entry.filename, relative_path, MAX_FILENAME_LENGTH - 1);
                 file_entry.filename[MAX_FILENAME_LENGTH - 1] = '\0';
+                file_entry.id = header->file_count;
                 file_entry.offset = ftell(archive_file);
                 file_entry.size = file_stat.st_size;
                 file_entry.type = 0;
@@ -120,6 +119,7 @@ int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uin
                 archive_file_entry_t file_entry;
                 strncpy(file_entry.filename, relative_path, MAX_FILENAME_LENGTH - 1);
                 file_entry.filename[MAX_FILENAME_LENGTH - 1] = '\0';
+                file_entry.id = header->file_count;
                 file_entry.offset = 0;
                 file_entry.size = 0;
                 file_entry.type = 1;
@@ -138,6 +138,8 @@ int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uin
                     return result;
                 }
             }
+
+            header->file_count++;
         }
     }
 
@@ -282,6 +284,39 @@ int write_files(archive_header_t *header, FILE *archive_file, const char *dst_di
     }
 
     return 0;
+}
+
+FILE *load_archive(const char *archive_path) {
+    FILE *arch = fopen(archive_path, "r+b");
+    if (!arch) {
+        fprintf(stderr, "Failed to open archive: %s\n", archive_path);
+        perror("Error");
+        return NULL;
+    }
+
+    return arch;
+}
+
+archive_file_entry_t *get_entries(FILE *archive_file, uint64_t *count) {
+    archive_header_t header;
+    fseek(archive_file, 0, SEEK_SET);
+    fread(&header, sizeof(header), 1, archive_file);
+
+    if (memcmp(header.magic, MAGIC, 4) != 0) {
+        fprintf(stderr, "Unknown magic in archive.\n");
+        return NULL;
+    }
+
+    archive_file_entry_t *entries = malloc(header.file_count * sizeof(archive_file_entry_t));
+    if (!entries) return NULL;
+
+    fseek(archive_file, header.file_table_offset, SEEK_SET);
+
+    fread(entries, sizeof(archive_file_entry_t), header.file_count, archive_file);
+
+    *count = header.file_count;
+
+    return entries;
 }
 
 int init_header(archive_header_t *header) {

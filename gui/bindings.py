@@ -5,9 +5,9 @@ import sys
 
 class ArchiveHeader(ctypes.Structure):
     _fields_ = [
-        ("magic", ctypes.c_char * 4),
-        ("version", ctypes.c_uint32),
-        ("file_count", ctypes.c_uint64),
+        ("magic",             ctypes.c_char * 4),
+        ("version",           ctypes.c_uint32),
+        ("file_count",        ctypes.c_uint64),
         ("file_table_offset", ctypes.c_uint64),
         ("data_table_offset", ctypes.c_uint64),
     ]
@@ -16,9 +16,10 @@ class ArchiveHeader(ctypes.Structure):
 class ArchiveFileEntry(ctypes.Structure):
     _fields_ = [
         ("filename", ctypes.c_char * 512),
-        ("offset", ctypes.c_uint64),
-        ("size", ctypes.c_uint64),
-        ("type", ctypes.c_uint8),
+        ("id",       ctypes.c_uint64),
+        ("offset",   ctypes.c_uint64),
+        ("size",     ctypes.c_uint64),
+        ("type",     ctypes.c_uint8),
     ]
 
 

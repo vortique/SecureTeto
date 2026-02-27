@@ -19,6 +19,7 @@ typedef struct
 typedef struct
 {
     char     filename[MAX_FILENAME_LENGTH];
+    uint64_t id;
     uint64_t offset;
     uint64_t size;
     uint8_t  type; // 0 for file, 1 for directory
@@ -92,6 +93,21 @@ int create_dirs(archive_header_t *header, FILE *archive_file, const char *dst_di
  * @return 0 on success, error code otherwise.
  */
 int write_files(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+
+/**
+ * @brief Loads an archive file.
+ * @param archive_path The path to the archive file.
+ * @return A pointer to the opened archive file, or NULL on failure.
+ */
+FILE *load_archive(const char *archive_path);
+
+/**
+ * @brief Retrieves the entries from an archive file.
+ * @param archive_file The archive file pointer.
+ * @param count Pointer to store the number of entries.
+ * @return A pointer to the array of entries, or NULL on failure.
+ */
+archive_file_entry_t *get_entries(FILE *archive_file, uint64_t *count);
 
 /**
  * @brief Creates directories recursively.

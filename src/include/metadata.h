@@ -3,6 +3,6 @@
 
 #define TOOL_NAME "SecureTeto"
 #define MAGIC "TETO"
-#define VERSION 1
+#define VERSION 3
 
 #endif // METADATA_H
