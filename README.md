@@ -8,8 +8,8 @@ It allows users to create encrypted containers (vaults) that can be accessed sec
 ## ⚠️ Development Status
 
 **SecureTeto** is in **early development**. Currently working on:
-- Basic archive format implementation
-- Core encryption functionality
+- GUI design and implementation
+- Adding more features to the C backend for vault management, enc/dec and binding to Python.
 
 Not ready for production use yet!
 
