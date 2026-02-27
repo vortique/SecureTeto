@@ -54,7 +54,9 @@ class FileSelector(QMainWindow):
         self._apply_styles()
 
     def _build_ui(self):
-        root = QVBoxLayout(self)
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        root = QVBoxLayout(central_widget)
         root.setContentsMargins(32, 28, 32, 28)
         root.setSpacing(20)
 
