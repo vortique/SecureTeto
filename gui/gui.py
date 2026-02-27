@@ -42,6 +42,29 @@ class CreateWorker(QObject):
             self.finished.emit()
 
 
+class ExtractWorker(QObject):
+    finished = pyqtSignal()
+    result_ready = pyqtSignal(int)
+    error = pyqtSignal(str)
+
+    def __init__(self, archive_file: str, dir_path: str) -> None:
+        super().__init__()
+        self.archive_file = archive_file
+        self.dir_path = dir_path
+
+    def run(self):
+        try:
+            result = lib.extract_archive(self.archive_file, self.dir_path)
+            if result == 0:
+                self.result_ready.emit(result)
+            else:
+                self.error.emit("Failed to extract archive.")
+        except Exception as e:
+            self.error.emit(str(e))
+        finally:
+            self.finished.emit()
+
+
 class PathRow(QWidget):
     """A label + line-edit + browse-button row."""
 
@@ -154,6 +177,8 @@ class ExtractTab(QWidget):
         super().__init__(parent)
         self._show_error = show_error
         self._show_info = show_info
+        self._worker_thread: QThread | None = None
+        self._worker: ExtractWorker | None = None
         self._build_ui()
 
     def _build_ui(self):
@@ -191,15 +216,33 @@ class ExtractTab(QWidget):
         self._start_worker(archive, directory)
 
     def _start_worker(self, archive, directory):
-        self._show_error("Extract is not yet implemented.")
+        self.start_btn.setEnabled(False)
+        self._worker_thread = QThread()
+        self._worker = ExtractWorker(archive, directory)
+        self._worker.moveToThread(self._worker_thread)
+        self._worker_thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self._worker_thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._worker_thread.finished.connect(self._worker_thread.deleteLater)
+        self._worker.result_ready.connect(self._on_result)
+        self._worker.error.connect(self._on_error)
+        self._worker_thread.start()
+
+    def _on_result(self, result):
+        self.start_btn.setEnabled(True)
+        self._show_info("Archive extracted successfully.")
+
+    def _on_error(self, msg):
+        self.start_btn.setEnabled(True)
+        self._show_error(f"Error: {msg}")
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SecureTeto")
-        self.setMinimumWidth(720)
-        self.setFixedHeight(400)
+        self.setMinimumWidth(560)
+        self.setFixedHeight(300)
         self._build_ui()
         self._apply_styles()
 

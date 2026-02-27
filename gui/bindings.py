@@ -4,6 +4,12 @@ import sys
 
 
 def load_lib():
+    """
+    Loads the SecureTeto library dynamically based on the current platform.
+
+    Returns:
+        ctypes.CDLL: The loaded library.
+    """
     base = os.path.join(os.path.dirname(__file__), "../bin/lib")
 
     if sys.platform == "win32":
@@ -34,6 +40,27 @@ def create_archive(archive_path: str, dir_path: str):
     lib.create_archive.restype = ctypes.c_int
 
     result: int = lib.create_archive(
+        archive_path.encode("utf-8"), dir_path.encode("utf-8")
+    )
+
+    return result
+
+def extract_archive(archive_path: str, dir_path: str):
+    """
+    Extracts the contents of an archive to the specified directory.
+
+    Args:
+        archive_path (str): The path to the archive file.
+        dir_path (str): The path to the directory to extract to.
+
+    Returns:
+        int: 0 on success, error code otherwise.
+    """
+    lib = load_lib()
+    lib.extract_archive.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    lib.extract_archive.restype = ctypes.c_int
+
+    result: int = lib.extract_archive(
         archive_path.encode("utf-8"), dir_path.encode("utf-8")
     )
 

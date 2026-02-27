@@ -20,11 +20,11 @@ else
     DEBUG_FLAGS = -g
 endif
 
-ifeq ($(OS), Windows_NT)
-    LDFLAGS = -lucrt
-else
-    LDFLAGS = # -lssl -lcrypto
-endif
+# ifeq ($(OS), Windows_NT)
+#     LDFLAGS = -lucrt
+# else
+#     LDFLAGS = # -lssl -lcrypto
+# endif
 
 all: setup $(TARGET)
 
