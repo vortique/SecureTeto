@@ -11,20 +11,20 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFileDialog,
     QFrame,
+    QTabWidget,
 )
-from PyQt6.QtCore import QObject, Qt, QThread, QObject, pyqtSignal
-from PyQt6.QtGui import QFont, QColor, QPalette
+from PyQt6.QtCore import QObject, Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont
 
 import bindings as lib
 
 
-class Worker(QObject):
+class CreateWorker(QObject):
     finished = pyqtSignal()
     result_ready = pyqtSignal(int)
     error = pyqtSignal(str)
 
     def __init__(self, archive_file: str, dir_path: str) -> None:
-
         super().__init__()
         self.archive_file = archive_file
         self.dir_path = dir_path
@@ -42,23 +42,174 @@ class Worker(QObject):
             self.finished.emit()
 
 
-class FileSelector(QMainWindow):
+class PathRow(QWidget):
+    """A label + line-edit + browse-button row."""
+
+    def __init__(
+        self, label: str, placeholder: str, pick_dir: bool = False, parent=None
+    ):
+        super().__init__(parent)
+        self._pick_dir = pick_dir
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        lbl = QLabel(label)
+        lbl.setObjectName("label")
+        lbl.setFixedWidth(70)
+
+        self.input = QLineEdit()
+        self.input.setPlaceholderText(placeholder)
+        self.input.setObjectName("path_input")
+
+        btn = QPushButton("Browse")
+        btn.setObjectName("browse_btn")
+        btn.setFixedWidth(80)
+        btn.clicked.connect(self._browse)
+
+        layout.addWidget(lbl)
+        layout.addWidget(self.input)
+        layout.addWidget(btn)
+
+    def _browse(self):
+        if self._pick_dir:
+            path = QFileDialog.getExistingDirectory(self, "Select Directory")
+        else:
+            path, _ = QFileDialog.getOpenFileName(self, "Select File")
+        if path:
+            self.input.setText(path)
+
+    def text(self) -> str:
+        return self.input.text().strip()
+
+
+class CreateTab(QWidget):
+    def __init__(self, show_error, show_info, parent=None):
+        super().__init__(parent)
+        self._show_error = show_error
+        self._show_info = show_info
+        self._worker_thread: QThread | None = None
+        self._worker: CreateWorker | None = None
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 16, 0, 0)
+        layout.setSpacing(14)
+
+        desc = QLabel("Pack a directory into a new archive file.")
+        desc.setObjectName("desc")
+        layout.addWidget(desc)
+
+        self.archive_row = PathRow("Archive", "Output archive path…", pick_dir=False)
+        layout.addWidget(self.archive_row)
+
+        self.dir_row = PathRow("Directory", "Source directory…", pick_dir=True)
+        layout.addWidget(self.dir_row)
+
+        layout.addStretch()
+
+        self.start_btn = QPushButton("Create Archive")
+        self.start_btn.setObjectName("start_btn")
+        self.start_btn.setFixedHeight(44)
+        self.start_btn.clicked.connect(self._on_start)
+        layout.addWidget(self.start_btn)
+
+    def _on_start(self):
+        archive = self.archive_row.text()
+        directory = self.dir_row.text()
+        if not archive:
+            self._show_error("Please select an archive file path.")
+            return
+        if not directory:
+            self._show_error("Please select a source directory.")
+            return
+        self._start_worker(archive, directory)
+
+    def _start_worker(self, archive, directory):
+        self.start_btn.setEnabled(False)
+        self._worker_thread = QThread()
+        self._worker = CreateWorker(archive, directory)
+        self._worker.moveToThread(self._worker_thread)
+        self._worker_thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self._worker_thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._worker_thread.finished.connect(self._worker_thread.deleteLater)
+        self._worker.result_ready.connect(self._on_result)
+        self._worker.error.connect(self._on_error)
+        self._worker_thread.start()
+
+    def _on_result(self, result):
+        self.start_btn.setEnabled(True)
+        self._show_info("Archive created successfully.")
+
+    def _on_error(self, msg):
+        self.start_btn.setEnabled(True)
+        self._show_error(f"Error: {msg}")
+
+
+class ExtractTab(QWidget):
+    def __init__(self, show_error, show_info, parent=None):
+        super().__init__(parent)
+        self._show_error = show_error
+        self._show_info = show_info
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 16, 0, 0)
+        layout.setSpacing(14)
+
+        desc = QLabel("Extract the contents of an archive into a directory.")
+        desc.setObjectName("desc")
+        layout.addWidget(desc)
+
+        self.archive_row = PathRow("Archive", "Select archive file…", pick_dir=False)
+        layout.addWidget(self.archive_row)
+
+        self.dir_row = PathRow("Output Dir", "Destination directory…", pick_dir=True)
+        layout.addWidget(self.dir_row)
+
+        layout.addStretch()
+
+        self.start_btn = QPushButton("Extract Archive")
+        self.start_btn.setObjectName("start_btn")
+        self.start_btn.setFixedHeight(44)
+        self.start_btn.clicked.connect(self._on_start)
+        layout.addWidget(self.start_btn)
+
+    def _on_start(self):
+        archive = self.archive_row.text()
+        directory = self.dir_row.text()
+        if not archive:
+            self._show_error("Please select an archive file.")
+            return
+        if not directory:
+            self._show_error("Please select a destination directory.")
+            return
+        self._start_worker(archive, directory)
+
+    def _start_worker(self, archive, directory):
+        self._show_error("Extract is not yet implemented.")
+
+
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self._worker_thread: QThread | None = None
-        self._worker: Worker | None = None
         self.setWindowTitle("SecureTeto")
-        self.setMinimumWidth(560)
-        self.setFixedHeight(260)
+        self.setMinimumWidth(720)
+        self.setFixedHeight(400)
         self._build_ui()
         self._apply_styles()
 
     def _build_ui(self):
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        root = QVBoxLayout(central_widget)
+        central = QWidget()
+        self.setCentralWidget(central)
+
+        root = QVBoxLayout(central)
         root.setContentsMargins(32, 28, 32, 28)
-        root.setSpacing(20)
+        root.setSpacing(16)
 
         # Title
         title = QLabel("SecureTeto")
@@ -71,56 +222,24 @@ class FileSelector(QMainWindow):
         line.setObjectName("divider")
         root.addWidget(line)
 
-        # File row
-        file_layout = QHBoxLayout()
-        file_layout.setSpacing(8)
-        file_label = QLabel("Archive")
-        file_label.setObjectName("label")
-        file_label.setFixedWidth(60)
-        self.file_input = QLineEdit()
-        self.file_input.setPlaceholderText("Select a file…")
-        self.file_input.setObjectName("path_input")
-        file_browse = QPushButton("Browse")
-        file_browse.setObjectName("browse_btn")
-        file_browse.setFixedWidth(80)
-        file_browse.clicked.connect(self._pick_file)
-        file_layout.addWidget(file_label)
-        file_layout.addWidget(self.file_input)
-        file_layout.addWidget(file_browse)
-        root.addLayout(file_layout)
-
-        # Directory row
-        dir_layout = QHBoxLayout()
-        dir_layout.setSpacing(8)
-        dir_label = QLabel("Directory")
-        dir_label.setObjectName("label")
-        dir_label.setFixedWidth(60)
-        self.dir_input = QLineEdit()
-        self.dir_input.setPlaceholderText("Select a directory…")
-        self.dir_input.setObjectName("path_input")
-        dir_browse = QPushButton("Browse")
-        dir_browse.setObjectName("browse_btn")
-        dir_browse.setFixedWidth(80)
-        dir_browse.clicked.connect(self._pick_dir)
-        dir_layout.addWidget(dir_label)
-        dir_layout.addWidget(self.dir_input)
-        dir_layout.addWidget(dir_browse)
-        root.addLayout(dir_layout)
-
-        root.addStretch()
-
-        # Start button
-        self.start_btn = QPushButton("Start")
-        self.start_btn.setObjectName("start_btn")
-        self.start_btn.setFixedHeight(44)
-        self.start_btn.clicked.connect(self._on_start)
-        root.addWidget(self.start_btn)
+        # Tabs
+        self.tabs = QTabWidget()
+        self.tabs.setObjectName("tabs")
+        self.tabs.addTab(
+            CreateTab(self._show_error, self._show_info),
+            "  Create  ",
+        )
+        self.tabs.addTab(
+            ExtractTab(self._show_error, self._show_info),
+            "  Extract  ",
+        )
+        root.addWidget(self.tabs)
 
     def _apply_styles(self):
         self.setStyleSheet(
             """
             QWidget {
-                background-color: #1a1a1c; 
+                background-color: #1a1a1c;
                 color: #fce4ec;
                 font-family: 'Segoe UI', 'SF Pro Display', sans-serif;
             }
@@ -128,7 +247,7 @@ class FileSelector(QMainWindow):
             QLabel#title {
                 font-size: 18px;
                 font-weight: 700;
-                color: #ff3e4d; 
+                color: #ff3e4d;
                 letter-spacing: 1.5px;
             }
 
@@ -137,15 +256,21 @@ class FileSelector(QMainWindow):
                 max-height: 1px;
             }
 
+            QLabel#desc {
+                font-size: 12px;
+                color: #888;
+                margin-bottom: 4px;
+            }
+
             QLabel#label {
                 font-size: 13px;
                 font-weight: 600;
-                color: #ffb3ba; 
+                color: #ffb3ba;
                 padding-top: 4px;
             }
 
             QLineEdit#path_input {
-                background-color: #252529; 
+                background-color: #252529;
                 border: 1px solid #44444a;
                 border-radius: 6px;
                 padding: 8px 12px;
@@ -155,11 +280,6 @@ class FileSelector(QMainWindow):
 
             QLineEdit#path_input:focus {
                 border: 1px solid #ff3e4d;
-                outline: none;
-            }
-
-            QLineEdit#path_input::placeholder {
-                color: #66666e;
             }
 
             QPushButton#browse_btn {
@@ -199,37 +319,46 @@ class FileSelector(QMainWindow):
             QPushButton#start_btn:pressed {
                 background-color: #d63031;
             }
+
+            QPushButton#start_btn:disabled {
+                background-color: #5a1a20;
+                color: #888;
+            }
+
+            QTabWidget#tabs {
+                background-color: transparent;
+            }
+
+            QTabWidget#tabs::pane {
+                border: 1px solid #2e2e33;
+                border-radius: 6px;
+                background-color: #1e1e21;
+                padding: 8px;
+            }
+
+            QTabBar::tab {
+                background-color: #252529;
+                color: #888;
+                border: 1px solid #2e2e33;
+                border-bottom: none;
+                border-radius: 6px 6px 0 0;
+                padding: 6px 16px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            QTabBar::tab:selected {
+                background-color: #1e1e21;
+                color: #ff3e4d;
+                border-color: #2e2e33;
+            }
+
+            QTabBar::tab:hover:!selected {
+                color: #ffb3ba;
+                background-color: #2d2d32;
+            }
         """
         )
-
-    def _pick_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select File")
-        if path:
-            self.file_input.setText(path)
-
-    def _pick_dir(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Directory")
-        if path:
-            self.dir_input.setText(path)
-            
-    def _get_dirs(self):
-        file_path = self.file_input.text().strip()
-        dir_path = self.dir_input.text().strip()
-        
-        return (file_path, dir_path)
-
-    def _on_start(self):
-        file_path, dir_path = self._get_dirs()
-
-        if not file_path:
-            self._show_error("Please select an archive file.")
-            return
-
-        if not dir_path:
-            self._show_error("Please select a destination directory.")
-            return
-
-        self._start_processing(file_path, dir_path)
 
     def _show_error(self, message):
         QMessageBox.critical(self, "Error", message)
@@ -237,42 +366,10 @@ class FileSelector(QMainWindow):
     def _show_info(self, message):
         QMessageBox.information(self, "Info", message)
 
-    def _start_processing(self, file_path, dir_path):
-        print(f"Processing file: {file_path}")
-        print(f"Destination directory: {dir_path}")
-        self._start_worker()
-
-    def on_result(self, result):
-        self.start_btn.setEnabled(True)
-        self._show_info(f"Archive created successfully. Result: {result}")
-
-    def on_error(self, error_message):
-        self.start_btn.setEnabled(True)
-        self._show_error(f"Error during processing: {error_message}")
-        
-    def _start_worker(self):
-        self.start_btn.setEnabled(False)
-        
-        file_path, dir_path = self._get_dirs()
-        
-        self._worker_thread = QThread()
-        self._worker = Worker(file_path, dir_path)
-        
-        self._worker.moveToThread(self._worker_thread)
-        
-        self._worker_thread.started.connect(self._worker.run)
-        self._worker.finished.connect(self._worker_thread.quit)
-        self._worker.finished.connect(self._worker.deleteLater)
-        self._worker_thread.finished.connect(self._worker_thread.deleteLater)
-        self._worker.result_ready.connect(self.on_result)
-        self._worker.error.connect(self.on_error)
-        
-        self._worker_thread.start()
-
 
 def start_gui():
     app = QApplication(sys.argv)
-    window = FileSelector()
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())
 
