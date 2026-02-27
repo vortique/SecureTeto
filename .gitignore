@@ -7,4 +7,9 @@ build/
 
 # Python related ignores
 venv/
-*/__pycache__/
+venv_linux/
+__pycache__/
+*.pyc
+
+# Tests
+tests/

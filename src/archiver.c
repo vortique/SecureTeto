@@ -7,6 +7,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+    #include <direct.h>
+    #define MKDIR(path, mode) _mkdir(path)
+#else
+    #include <sys/stat.h>
+    #define MKDIR(path, mode) mkdir(path, mode)
+#endif
+
 int create_archive(const char *archive_path, const char *dir_path) {
     archive_header_t header;
     init_header(&header);
@@ -25,7 +33,7 @@ int create_archive(const char *archive_path, const char *dir_path) {
         fclose(arch);
         return 3;
     } if (entry_count > 10000) {
-        printf("Warning: Archiving a large number of files (%lu). This may take some time.\n", entry_count);
+        printf("Warning: Archiving a large number of files (%llu). This may take some time.\n", entry_count);
     }
 
     header.data_table_offset = (sizeof(archive_header_t) + (sizeof(archive_file_entry_t) * entry_count));
@@ -296,9 +304,9 @@ void create_directory_recursive(const char *path) {
     for (char *p = tmp + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
-            mkdir(tmp, 0755); // Create parent, ignore errors if exists
+            MKDIR(tmp, 0755); // Create parent, ignore errors if exists
             *p = '/';
         }
     }
-    mkdir(tmp, 0755); // Create final directory
+    MKDIR(tmp, 0755); // Create final directory
 }
