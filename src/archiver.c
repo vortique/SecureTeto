@@ -33,7 +33,7 @@ int create_archive(const char *archive_path, const char *dir_path) {
         fclose(arch);
         return 3;
     } if (entry_count > 10000) {
-        printf("Warning: Archiving a large number of files (%llu). This may take some time.\n", entry_count);
+        printf("Warning: Archiving a large number of files (%lu). This may take some time.\n", entry_count);
     }
 
     header.data_table_offset = (sizeof(archive_header_t) + (sizeof(archive_file_entry_t) * entry_count));
