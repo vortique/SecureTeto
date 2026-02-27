@@ -3,6 +3,25 @@ import os
 import sys
 
 
+class ArchiveHeader(ctypes.Structure):
+    _fields_ = [
+        ("magic", ctypes.c_char * 4),
+        ("version", ctypes.c_uint32),
+        ("file_count", ctypes.c_uint64),
+        ("file_table_offset", ctypes.c_uint64),
+        ("data_table_offset", ctypes.c_uint64),
+    ]
+
+
+class ArchiveFileEntry(ctypes.Structure):
+    _fields_ = [
+        ("filename", ctypes.c_char * 512),
+        ("offset", ctypes.c_uint64),
+        ("size", ctypes.c_uint64),
+        ("type", ctypes.c_uint8),
+    ]
+
+
 def load_lib():
     """
     Loads the SecureTeto library dynamically based on the current platform.
@@ -44,6 +63,7 @@ def create_archive(archive_path: str, dir_path: str):
     )
 
     return result
+
 
 def extract_archive(archive_path: str, dir_path: str):
     """
