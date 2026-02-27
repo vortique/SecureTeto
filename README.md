@@ -13,6 +13,9 @@ It allows users to create encrypted containers (vaults) that can be accessed sec
 
 Not ready for production use yet!
 
+## Early screenshots of the Python GUI (subject to change):
+![SecureTeto GUI](assets/screenshots/current.png)
+
 ## Roadmap
 
 - [x] Design unique archive format for encrypted vaults
