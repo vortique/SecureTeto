@@ -1,22 +1,17 @@
 import ctypes
+import os
 import sys
 
 
 def load_lib():
-    """
-    Loads the SecureTeto library dynamically based on the current platform.
+    base = os.path.join(os.path.dirname(__file__), "../bin/lib")
 
-    Returns:
-        ctypes.CDLL: The loaded library.
-    """
-    lib: ctypes.CDLL
-    
     if sys.platform == "win32":
-        lib = ctypes.CDLL("../bin/lib/libsecu_engine.dll")
-    elif sys.platform == "linux":
-        lib = ctypes.CDLL("../bin/lib/libsecu_engine.so")
+        lib = ctypes.CDLL(os.path.join(base, "libsecu_engine.dll"))
+    elif sys.platform.startswith("linux"):
+        lib = ctypes.CDLL(os.path.join(base, "libsecu_engine.so"))
     elif sys.platform == "darwin":
-        lib = ctypes.CDLL("../bin/lib/libsecu_engine.dylib")
+        lib = ctypes.CDLL(os.path.join(base, "libsecu_engine.dylib"))
     else:
         raise Exception("Unsupported platform")
 
