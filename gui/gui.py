@@ -241,8 +241,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SecureTeto")
-        self.setMinimumWidth(560)
-        self.setFixedHeight(300)
+        self.setMinimumWidth(720)
+        self.setFixedHeight(400)
         self._build_ui()
         self._apply_styles()
 
