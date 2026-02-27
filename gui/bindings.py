@@ -9,12 +9,16 @@ def load_lib():
     Returns:
         ctypes.CDLL: The loaded library.
     """
+    lib: ctypes.CDLL
+    
     if sys.platform == "win32":
         lib = ctypes.CDLL("../bin/lib/libsecu_engine.dll")
     elif sys.platform == "posix":
         lib = ctypes.CDLL("../bin/lib/libsecu_engine.so")
     elif sys.platform == "darwin":
         lib = ctypes.CDLL("../bin/lib/libsecu_engine.dylib")
+    else:
+        raise Exception("Unsupported platform")
 
     return lib
 
