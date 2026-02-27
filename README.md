@@ -19,8 +19,10 @@ Not ready for production use yet!
 ## Roadmap
 
 - [x] Design unique archive format for encrypted vaults
-- [ ] Implement archive creation and extraction
-- [ ] Command-line interface (CLI) for vault management
+- [x] Implement archive creation and extraction
+- [x] Command-line interface (CLI) for vault management
+- [ ] Develop more Python bindings for C backend
+- [ ] Implement GUI features for vault creation, file management, and encryption/decryption
 
 ### In future releases...
 
