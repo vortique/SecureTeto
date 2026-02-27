@@ -13,7 +13,7 @@ def load_lib():
     
     if sys.platform == "win32":
         lib = ctypes.CDLL("../bin/lib/libsecu_engine.dll")
-    elif sys.platform == "posix":
+    elif sys.platform == "linux":
         lib = ctypes.CDLL("../bin/lib/libsecu_engine.so")
     elif sys.platform == "darwin":
         lib = ctypes.CDLL("../bin/lib/libsecu_engine.dylib")
@@ -21,16 +21,6 @@ def load_lib():
         raise Exception("Unsupported platform")
 
     return lib
-
-
-def unload_lib(lib: ctypes.CDLL):
-    """
-    Unloads the SecureTeto library.
-
-    Args:
-        lib (ctypes.CDLL): The loaded library to be unloaded.
-    """
-    lib.close()
 
 
 def create_archive(archive_path: str, dir_path: str):
@@ -51,7 +41,5 @@ def create_archive(archive_path: str, dir_path: str):
     result: int = lib.create_archive(
         archive_path.encode("utf-8"), dir_path.encode("utf-8")
     )
-    
-    unload_lib(lib)
 
     return result
