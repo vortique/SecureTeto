@@ -38,17 +38,15 @@ int create_archive(const char *archive_path, const char *dir_path) {
 
     header.data_table_offset = (sizeof(archive_header_t) + (sizeof(archive_file_entry_t) * entry_count));
 
-    uint64_t *entry_pos = malloc(sizeof(uint64_t)); // for global tracking of file entry position
-    *entry_pos = header.file_table_offset;
+    uint64_t entry_pos = header.file_table_offset; // for global tracking of file entry position
     
-    fseek(arch, header.data_table_offset, SEEK_SET);
-    int result = write_and_create_entry_dir(&header, arch, entry_pos, dir_path, "");
+    fseek(arch, header.data_table_offset, SEEK_SET); // move to data table to write entry data first, then file table
+    int result = write_and_create_entry_dir(&header, arch, &entry_pos, dir_path, "");
 
     fseek(arch, 0, SEEK_SET);
     fwrite(&header, sizeof(header), 1, arch);
 
     fclose(arch);
-    free(entry_pos);
 
     return result;
 }
@@ -73,6 +71,8 @@ int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uin
         snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
 
         if(stat(full_path, &file_stat) == 0) {
+            header->file_count++;
+            
             if (S_ISREG(file_stat.st_mode)) {
                 // Create relative path for the file entry
                 snprintf(relative_path, sizeof(relative_path), "%s%s", 
@@ -138,8 +138,6 @@ int write_and_create_entry_dir(archive_header_t *header, FILE *archive_file, uin
                     return result;
                 }
             }
-
-            header->file_count++;
         }
     }
 
@@ -286,8 +284,8 @@ int write_files(archive_header_t *header, FILE *archive_file, const char *dst_di
     return 0;
 }
 
-FILE *load_archive(const char *archive_path) {
-    FILE *arch = fopen(archive_path, "r+b");
+FILE *load_archive(const char *archive_path, const char *mode) {
+    FILE *arch = fopen(archive_path, mode);
     if (!arch) {
         fprintf(stderr, "Failed to open archive: %s\n", archive_path);
         perror("Error");
@@ -319,6 +317,26 @@ archive_file_entry_t *get_entries(FILE *archive_file, uint64_t *count) {
     return entries;
 }
 
+archive_file_entry_t *get_file_entry_by_name(archive_file_entry_t *entries, const char *name, uint64_t count) {
+    for (uint64_t i = 0; i < count; i++) {
+        if (strcmp(entries[i].filename, name) == 0) {
+            return &entries[i];
+        }
+    }
+
+    return NULL;
+}
+
+archive_file_entry_t *get_file_entry_by_id(archive_file_entry_t *entries, uint64_t id, uint64_t count) {
+    for (uint64_t i = 0; i < count; i++) {
+        if (entries[i].id == id) {
+            return &entries[i];
+        }
+    }
+
+    return NULL;
+}
+
 int init_header(archive_header_t *header) {
     header->magic[0] = 'T';
     header->magic[1] = 'E';
@@ -329,6 +347,17 @@ int init_header(archive_header_t *header) {
     header->file_table_offset = sizeof(archive_header_t);
     header->data_table_offset = 0;
 
+    return 0;
+}
+
+// DO NOT USE IN LIBRARY FUNCTIONS,
+// CAN INTERRUPT FILE CURSOR POSITION (Undefined behavior)!
+// Made for used in CLI & GUI for short times.
+int get_header(FILE *archive_file, archive_header_t *header) {
+    uint64_t pos = ftell(archive_file);
+    fseek(archive_file, 0, SEEK_SET);
+    fread(header, sizeof(archive_header_t), 1, archive_file);
+    fseek(archive_file, pos, SEEK_SET);
     return 0;
 }
 

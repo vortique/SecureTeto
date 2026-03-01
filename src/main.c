@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-int handle_arguments(Args *args);
+int handle_arguments(Args *args, StringArray *argv_array);
 
 int main(int argc, char **argv) {
     StringArray argv_array = {
@@ -19,12 +19,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    int result = handle_arguments(parsed_args);
+    int result = handle_arguments(parsed_args, &argv_array);
 
     return result;
 }
 
-int handle_arguments(Args *args) {
+int handle_arguments(Args *args, StringArray *argv_array) {
     if (argparse_has_flag(args, "--pack")) {
         const char *src_dir  = args->arguments.data[0];
         const char *dst_arch = args->arguments.data[1];
@@ -35,6 +35,33 @@ int handle_arguments(Args *args) {
         const char *dst_dir = args->arguments.data[1];
 
         return extract_archive(arch_path, dst_dir);
+    } else if (argparse_has_flag(args, "--get-entries")) {
+        const char *path = argparse_get_flag_value(args, "--get-entries", argv_array);
+
+        printf("Reading archive: %s\n", path);
+
+        FILE *archive_file = load_archive(path, "rb");
+        if (!archive_file) {
+            printf("Error while loading archive.\n");
+            return 1;
+        }
+
+        uint64_t count;
+        archive_file_entry_t *entries = get_entries(archive_file, &count);
+        if (!entries) {
+            printf("Error while reading etries.");
+            return 1;
+        }
+
+        for (uint64_t i = 0; i < count; i++) {
+            printf("%s: (id: %lu, offset: %lu, size: %lu, type: %s)\n", entries[i].filename, entries[i].id,
+                entries[i].offset, entries[i].size, entries[i].type ? "dir" : "file");
+        }
+
+        free(entries);
+        fclose(archive_file);
+
+        return 0;
     }
 
     return 0;

@@ -9,7 +9,7 @@
 #pragma pack(push, 1)
 typedef struct
 {
-    char     magic[4]; // "TETO"
+    char magic[4]; // "TETO"
     uint32_t version;
     uint64_t file_count;
     uint64_t file_table_offset;
@@ -18,11 +18,11 @@ typedef struct
 
 typedef struct
 {
-    char     filename[MAX_FILENAME_LENGTH];
+    char filename[MAX_FILENAME_LENGTH];
     uint64_t id;
     uint64_t offset;
     uint64_t size;
-    uint8_t  type; // 0 for file, 1 for directory
+    uint8_t type; // 0 for file, 1 for directory
 } archive_file_entry_t;
 #pragma pack(pop)
 
@@ -99,7 +99,7 @@ int write_files(archive_header_t *header, FILE *archive_file, const char *dst_di
  * @param archive_path The path to the archive file.
  * @return A pointer to the opened archive file, or NULL on failure.
  */
-FILE *load_archive(const char *archive_path);
+FILE *load_archive(const char *archive_path, const char *mode);
 
 /**
  * @brief Retrieves the entries from an archive file.
@@ -108,6 +108,12 @@ FILE *load_archive(const char *archive_path);
  * @return A pointer to the array of entries, or NULL on failure.
  */
 archive_file_entry_t *get_entries(FILE *archive_file, uint64_t *count);
+
+archive_file_entry_t *get_file_entry_by_name(archive_file_entry_t *entries, const char *name, uint64_t count);
+
+archive_file_entry_t *get_file_entry_by_id(archive_file_entry_t *entries, uint64_t id, uint64_t count);
+
+int get_header(FILE *archive_file, archive_header_t *header);
 
 /**
  * @brief Creates directories recursively.
