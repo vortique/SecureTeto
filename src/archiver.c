@@ -179,39 +179,28 @@ uint64_t scan_entry_count(const char *path) {
 int extract_archive(const char *archive_path, const char *dst_dir) {
     create_directory_recursive(dst_dir);
     
-    FILE *arch = fopen(archive_path, "rb");
-    if (!arch) {
-        fprintf(stderr, "Failed to open archive: %s\n", archive_path);
-        perror("Error");
-        return 2;
+    archive_context_t contex;
+    
+    if (load_archive(archive_path, "rb", &contex) != 0) {
+        return 1;
     }
 
-    archive_header_t header;
+    int result = extract_entry(&contex, dst_dir);
 
-    fread(&header, sizeof(header), 1, arch);
-
-    if (memcmp(header.magic, MAGIC, 4) != 0) {
-        fclose(arch);
-        fprintf(stderr, "Unknown magic in: %s\n", archive_path);
-        return 6;
-    }
-
-    int result = extract_entry(&header, arch, dst_dir);
-
-    fclose(arch);
+    free_archive(&contex);
 
     return result;
 }
 
-int extract_entry(archive_header_t *header, FILE *archive_file, const char *dst_dir) {
+int extract_entry(archive_context_t *contex, const char *dst_dir) {
     int result;
     
-    result = create_dirs(header, archive_file, dst_dir);
+    result = create_dirs(contex, dst_dir);
     if (result != 0) {
         return result;
     }
 
-    result = write_files(header, archive_file, dst_dir);
+    result = write_files(contex, dst_dir);
     if (result != 0) {
         return result;
     }
@@ -219,12 +208,12 @@ int extract_entry(archive_header_t *header, FILE *archive_file, const char *dst_
     return 0;
 }
 
-int create_dirs(archive_header_t *header, FILE *archive_file, const char *dst_dir) {
-    fseek(archive_file, header->file_table_offset, SEEK_SET);
+int create_dirs(archive_context_t *contex, const char *dst_dir) {
+    fseek(contex->archive_file, contex->header.file_table_offset, SEEK_SET);
 
-    for (uint64_t i = 0; i < header->file_count; i++) {
+    for (uint64_t i = 0; i < contex->header.file_count; i++) {
         archive_file_entry_t file_entry;
-        fread(&file_entry, sizeof(file_entry), 1, archive_file);
+        fread(&file_entry, sizeof(file_entry), 1, contex->archive_file);
 
         // Means it's a directory
         if (file_entry.type == 1) {
@@ -238,12 +227,12 @@ int create_dirs(archive_header_t *header, FILE *archive_file, const char *dst_di
     return 0;
 }
 
-int write_files(archive_header_t *header, FILE *archive_file, const char *dst_dir) {
-    fseek(archive_file, header->file_table_offset, SEEK_SET);
+int write_files(archive_context_t *contex, const char *dst_dir) {
+    fseek(contex->archive_file, contex->header.file_table_offset, SEEK_SET);
 
-    for (uint64_t i = 0; i < header->file_count; i++) {
+    for (uint64_t i = 0; i < contex->header.file_count; i++) {
         archive_file_entry_t file_entry;
-        fread(&file_entry, sizeof(file_entry), 1, archive_file);
+        fread(&file_entry, sizeof(file_entry), 1, contex->archive_file);
 
         if (file_entry.type == 0) {
             char full_path[1024];
@@ -256,16 +245,16 @@ int write_files(archive_header_t *header, FILE *archive_file, const char *dst_di
                 return 2;
             }
 
-            uint64_t current_pos = ftell(archive_file);
+            uint64_t current_pos = ftell(contex->archive_file);
 
-            fseek(archive_file, file_entry.offset, SEEK_SET);
+            fseek(contex->archive_file, file_entry.offset, SEEK_SET);
 
             uint8_t  buffer[4096];
             uint64_t bytes_remain = file_entry.size;
 
             while (bytes_remain > 0) {
                 uint32_t bytes_to_read = (bytes_remain < sizeof(buffer)) ? bytes_remain : sizeof(buffer);
-                uint32_t bytes_read = fread(buffer, 1, bytes_to_read, archive_file);
+                uint32_t bytes_read = fread(buffer, 1, bytes_to_read, contex->archive_file);
 
                 if (bytes_read == 0) {
                     break;
@@ -277,42 +266,57 @@ int write_files(archive_header_t *header, FILE *archive_file, const char *dst_di
 
             fclose(ofile);
 
-            fseek(archive_file, current_pos, SEEK_SET);
+            fseek(contex->archive_file, current_pos, SEEK_SET);
         }
     }
 
     return 0;
 }
 
-FILE *load_archive(const char *archive_path, const char *mode) {
+int load_archive(const char *archive_path, const char *mode, archive_context_t *contex) {
     FILE *arch = fopen(archive_path, mode);
     if (!arch) {
         fprintf(stderr, "Failed to open archive: %s\n", archive_path);
         perror("Error");
-        return NULL;
+        return 2;
     }
 
-    return arch;
-}
+    contex->archive_file = arch;
+    strcpy(contex->archive_path, archive_path);
 
-archive_file_entry_t *get_entries(FILE *archive_file, uint64_t *count) {
     archive_header_t header;
-    fseek(archive_file, 0, SEEK_SET);
-    fread(&header, sizeof(header), 1, archive_file);
+    get_header(arch, &header);
 
     if (memcmp(header.magic, MAGIC, 4) != 0) {
         fprintf(stderr, "Unknown magic in archive.\n");
-        return NULL;
+        return 6;
     }
 
-    archive_file_entry_t *entries = malloc(header.file_count * sizeof(archive_file_entry_t));
+    contex->header = header;
+
+    contex->entries = get_entries(arch, &contex->header);
+
+    if (!contex->entries) {
+        fprintf(stderr, "Failed to get entries.\n");
+        return 7;
+    }
+
+    return 0;
+}
+
+int free_archive(archive_context_t *contex) {
+    free(contex->entries);
+    fclose(contex->archive_file);
+    return 0;
+}
+
+archive_file_entry_t *get_entries(FILE *archive_file, archive_header_t *header) {
+    archive_file_entry_t *entries = malloc(header->file_count * sizeof(archive_file_entry_t));
     if (!entries) return NULL;
 
-    fseek(archive_file, header.file_table_offset, SEEK_SET);
+    fseek(archive_file, header->file_table_offset, SEEK_SET);
 
-    fread(entries, sizeof(archive_file_entry_t), header.file_count, archive_file);
-
-    *count = header.file_count;
+    fread(entries, sizeof(archive_file_entry_t), header->file_count, archive_file);
 
     return entries;
 }
@@ -350,9 +354,6 @@ int init_header(archive_header_t *header) {
     return 0;
 }
 
-// DO NOT USE IN LIBRARY FUNCTIONS,
-// CAN INTERRUPT FILE CURSOR POSITION (Undefined behavior)!
-// Made for used in CLI & GUI for short times.
 int get_header(FILE *archive_file, archive_header_t *header) {
     uint64_t pos = ftell(archive_file);
     fseek(archive_file, 0, SEEK_SET);

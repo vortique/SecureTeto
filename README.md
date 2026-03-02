@@ -1,8 +1,6 @@
 # SecureTeto
 > Kasane Teto's encrypted file storage solution for storing her precious baguette images.
 
-#### **! Stopped development for now, for personal reasons and future projects !**
-
 **SecureTeto** is a fast, secure, and user-friendly encrypted file storage program written with C (for backend, archiving etc.) and Python (for GUI, PyQt6).
 
 It allows users to create encrypted containers (vaults) that can be accessed securely from Python GUI, providing seamless access to encrypted files.

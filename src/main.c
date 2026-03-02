@@ -40,26 +40,21 @@ int handle_arguments(Args *args, StringArray *argv_array) {
 
         printf("Reading archive: %s\n", path);
 
-        FILE *archive_file = load_archive(path, "rb");
-        if (!archive_file) {
+        archive_context_t contex;
+        if (load_archive(path, "rb", &contex) != 0) {
             printf("Error while loading archive.\n");
             return 1;
         }
 
-        uint64_t count;
-        archive_file_entry_t *entries = get_entries(archive_file, &count);
-        if (!entries) {
-            printf("Error while reading etries.");
+        for (uint64_t i = 0; i < contex.header.file_count; i++) {
+            printf("%s: (id: %lu, offset: %lu, size: %lu, type: %s)\n", contex.entries[i].filename, contex.entries[i].id,
+                contex.entries[i].offset, contex.entries[i].size, contex.entries[i].type ? "dir" : "file");
+        }
+
+        if (free_archive(&contex) != 0) {
+            printf("Error while freeing archive.\n");
             return 1;
         }
-
-        for (uint64_t i = 0; i < count; i++) {
-            printf("%s: (id: %lu, offset: %lu, size: %lu, type: %s)\n", entries[i].filename, entries[i].id,
-                entries[i].offset, entries[i].size, entries[i].type ? "dir" : "file");
-        }
-
-        free(entries);
-        fclose(archive_file);
 
         return 0;
     }

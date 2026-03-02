@@ -24,6 +24,14 @@ typedef struct
     uint64_t size;
     uint8_t type; // 0 for file, 1 for directory
 } archive_file_entry_t;
+
+typedef struct
+{
+    char archive_path[MAX_FILENAME_LENGTH * 2];
+    FILE *archive_file;
+    archive_header_t header;
+    archive_file_entry_t *entries;
+} archive_context_t;
 #pragma pack(pop)
 
 /**
@@ -67,47 +75,17 @@ int init_header(archive_header_t *header);
  */
 int extract_archive(const char *archive_path, const char *dst_dir);
 
-/**
- * @brief Extracts entries from the archive.
- * @param header Pointer to the archive header.
- * @param archive_file The archive file pointer.
- * @param dst_dir The destination directory.
- * @return 0 on success, error code otherwise.
- */
-int extract_entry(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+int extract_entry(archive_context_t *contex, const char *dst_dir);
 
-/**
- * @brief Creates directories from the archive entries.
- * @param header Pointer to the archive header.
- * @param archive_file The archive file pointer.
- * @param dst_dir The destination directory.
- * @return 0 on success, error code otherwise.
- */
-int create_dirs(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+int create_dirs(archive_context_t *contex, const char *dst_dir);
 
-/**
- * @brief Writes files from the archive to the destination.
- * @param header Pointer to the archive header.
- * @param archive_file The archive file pointer.
- * @param dst_dir The destination directory.
- * @return 0 on success, error code otherwise.
- */
-int write_files(archive_header_t *header, FILE *archive_file, const char *dst_dir);
+int write_files(archive_context_t *contex, const char *dst_dir);
 
-/**
- * @brief Loads an archive file.
- * @param archive_path The path to the archive file.
- * @return A pointer to the opened archive file, or NULL on failure.
- */
-FILE *load_archive(const char *archive_path, const char *mode);
+int load_archive(const char *archive_path, const char *mode, archive_context_t *contex);
 
-/**
- * @brief Retrieves the entries from an archive file.
- * @param archive_file The archive file pointer.
- * @param count Pointer to store the number of entries.
- * @return A pointer to the array of entries, or NULL on failure.
- */
-archive_file_entry_t *get_entries(FILE *archive_file, uint64_t *count);
+int free_archive(archive_context_t *contex);
+
+archive_file_entry_t *get_entries(FILE *archive_file, archive_header_t *header);
 
 archive_file_entry_t *get_file_entry_by_name(archive_file_entry_t *entries, const char *name, uint64_t count);
 
