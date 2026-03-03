@@ -29,6 +29,53 @@ Not ready for production use yet!
 - [ ] Cross-platform support (Windows, macOS, Linux)
 - [ ] Mountable encrypted vaults as virtual drives
 
+## Installation
+
+### On Windows
+---
+
+#### Pre-requisites
+
+##### MSYS2
+
+1. Download and install [MSYS](https://mingw-w64.org/doku.php/download/mingw-builds)
+2. Search **MSYS2 MINGW64** in the search bar and open
+3. Write `pacman -Syu` in the terminal
+4. If it closes the terminal or says to close it, close it and open it again
+5. Write `pacman -Su` in the terminal
+6. Install build deps with `pacman -S mingw-w64-x86_64-toolchain` (select all for installation)
+7. Install libsodium with `pacman -S mingw-w64-x86_64-libsodium`
+8. Install git with `pacman -S mingw-w64-x86_64-git` (Optional if you want use MSYS all time)
+
+##### Python
+
+1. Download and install [Python 3.11.9](https://www.python.org/downloads/release/python-3119/) (Add to PATH)
+
+#### Install SecureTeto
+
+1. Clone the repository and navigate to the root directory:
+```bash
+git clone https://github.com/bahadir/SecureTeto.git
+cd SecureTeto
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+1. Open MSYS2 MinGW64 terminal to run `make`:
+```bash
+make
+```
+
+1. Run the program:
+```bash
+.\bin\secu_engine.exe
+```
+
+**NOTE**: GUI is not available yet.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

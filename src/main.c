@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 int handle_arguments(Args *args, StringArray *argv_array);
+void print_help();
 
 int main(int argc, char **argv) {
     StringArray argv_array = {
@@ -25,6 +26,16 @@ int main(int argc, char **argv) {
 }
 
 int handle_arguments(Args *args, StringArray *argv_array) {
+    if (argparse_has_flag(args, "--version") || argparse_has_flag(args, "-v")) {
+        printf("%s %d.%d.%d\n", TOOL_NAME, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+        return 0;
+    }
+    
+    if (argparse_has_flag(args, "--help") || argparse_has_flag(args, "-h") || args->arguments.len == 0) {
+        print_help();
+        return 0;
+    }
+
     if (argparse_has_flag(args, "--pack")) {
         const char *src_dir  = args->arguments.data[0];
         const char *dst_arch = args->arguments.data[1];
@@ -47,7 +58,7 @@ int handle_arguments(Args *args, StringArray *argv_array) {
         }
 
         for (uint64_t i = 0; i < contex.header.file_count; i++) {
-            printf("%s: (id: %lu, offset: %lu, size: %lu, type: %s)\n", contex.entries[i].filename, contex.entries[i].id,
+            printf("%s: (id: %llu, offset: %llu, size: %llu, type: %s)\n", contex.entries[i].filename, contex.entries[i].id,
                 contex.entries[i].offset, contex.entries[i].size, contex.entries[i].type ? "dir" : "file");
         }
 
@@ -60,4 +71,15 @@ int handle_arguments(Args *args, StringArray *argv_array) {
     }
 
     return 0;
+}
+
+void print_help() {
+    printf("Usage: %s [OPTIONS]\n\n", TOOL_NAME);
+    printf("Options:\n");
+    printf("  --pack <src_dir> <dst_arch>    Create a new archive from a directory.\n");
+    printf("  --unpack <arch_path> <dst_dir> Extract an existing archive to a directory.\n");
+    printf("  --get-entries <arch_path>      List all files and directories within an archive.\n");
+    printf("  --help, -h                     Display this help message and exit.\n");
+    printf("\nExample:\n");
+    printf("  %s --pack ./my_files backup.sec\n", TOOL_NAME);
 }

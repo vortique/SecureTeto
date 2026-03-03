@@ -13,3 +13,9 @@ __pycache__/
 
 # Tests
 tests/
+
+# SecureTeto
+*.sec
+
+# idk what this is keeps showing up
+nul

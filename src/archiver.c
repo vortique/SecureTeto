@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sodium.h>
 
 #ifdef _WIN32
     #include <direct.h>
@@ -33,7 +34,7 @@ int create_archive(const char *archive_path, const char *dir_path) {
         fclose(arch);
         return 3;
     } if (entry_count > 10000) {
-        printf("Warning: Archiving a large number of files (%lu). This may take some time.\n", entry_count);
+        printf("Warning: Archiving a large number of files (%llu). This may take some time.\n", entry_count);
     }
 
     header.data_table_offset = (sizeof(archive_header_t) + (sizeof(archive_file_entry_t) * entry_count));
@@ -346,7 +347,7 @@ int init_header(archive_header_t *header) {
     header->magic[1] = 'E';
     header->magic[2] = 'T';
     header->magic[3] = 'O';
-    header->version = VERSION;
+    header->version = ARCHIVE_VER;
     header->file_count = 0;
     header->file_table_offset = sizeof(archive_header_t);
     header->data_table_offset = 0;
