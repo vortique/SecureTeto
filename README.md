@@ -55,7 +55,7 @@ Not ready for production use yet!
 
 1. Clone the repository and navigate to the root directory:
 ```bash
-git clone https://github.com/bahadir/SecureTeto.git
+git clone https://github.com/vortique/SecureTeto.git
 cd SecureTeto
 ```
 
