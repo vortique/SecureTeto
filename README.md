@@ -45,11 +45,11 @@ Not ready for production use yet!
 5. Write `pacman -Su` in the terminal
 6. Install build deps with `pacman -S mingw-w64-x86_64-toolchain` (select all for installation)
 7. Install libsodium with `pacman -S mingw-w64-x86_64-libsodium`
-8. Install git with `pacman -S mingw-w64-x86_64-git` (Optional if you want use MSYS all time)
+8. Install git with `pacman -S mingw-w64-x86_64-git`
 
 ##### Python
 
-1. Download and install [Python 3.11.9](https://www.python.org/downloads/release/python-3119/) (Add to PATH)
+Download and install [Python 3.11.9](https://www.python.org/downloads/release/python-3119/) (Add to PATH)
 
 #### Install SecureTeto
 
@@ -59,19 +59,119 @@ git clone https://github.com/vortique/SecureTeto.git
 cd SecureTeto
 ```
 
-2. Install dependencies:
+2. Create a virtual environment and activate it:
 ```bash
+python -m venv venv
+.\venv\Script\activate
+```
+
+3. Install Python dependencies:
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-1. Open MSYS2 MinGW64 terminal to run `make`:
+4. Open MSYS2 MinGW64 terminal to run `make`:
 ```bash
 make
+
+# make lib-win for creating the libsecu_engine.dll
 ```
 
-1. Run the program:
+5. Run the program:
 ```bash
-.\bin\secu_engine.exe
+.\bin\secu_engine.exe -h
+```
+
+### On Linux
+---
+
+#### Pre-requisites
+
+1. Most distributions already have `git` and `python3` — you usually only need to install development tools and libsodium.
+
+##### Ubuntu / Debian / Linux Mint / Pop!_OS
+
+```bash
+sudo apt update
+sudo apt install -y \
+    build-essential \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    libsodium-dev \
+    pkg-config
+```
+
+##### Fedora / RHEL-based
+
+```bash
+sudo dnf install -y \
+    @development-tools \
+    python3 \
+    python3-pip \
+    python3-devel \
+    git \
+    libsodium-devel \
+    pkgconf-pkg-config
+```
+
+##### Arch / Manjaro
+
+```bash
+sudo pacman -Syu --needed \
+    base-devel \
+    python \
+    python-pip \
+    git \
+    libsodium \
+    pkgconf
+```
+
+##### openSUSE
+
+```bash
+sudo zypper install -y \
+    patterns-devel-base-devel_basis \
+    python311 \
+    python311-pip \
+    git \
+    libsodium-devel \
+    pkg-config
+```
+
+#### Install SecureTeto
+
+1. Clone the repository and navigate to the root directory:
+```bash
+git clone https://github.com/vortique/SecureTeto.git
+cd SecureTeto
+```
+
+2. Create a virtual environment and activate it:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+(You can later deactivate it with deactivate)
+
+3. Install Python dependencies:
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+4. Build the project:
+```bash
+make
+
+# make lib-linux for creating the libsecu_engine.so
+```
+
+5. Run the program:
+```bash
+./bin/secu_engine # -h for help
 ```
 
 **NOTE**: GUI is not available yet.

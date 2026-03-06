@@ -37,22 +37,30 @@ int handle_arguments(Args *args, StringArray *argv_array) {
     }
 
     if (argparse_has_flag(args, "--pack")) {
-        const char *src_dir  = args->arguments.data[0];
-        const char *dst_arch = args->arguments.data[1];
+        if (argparse_has_flag(args, "--pwd") && argparse_has_flag(args, "--dest-dir")) {
+            const char *src_dir  = argparse_get_flag_value(args, "--pack", argv_array);
+            const char *dest_arch = argparse_get_flag_value(args, "--dest-dir", argv_array);
+            const char *pwd = argparse_get_flag_value(args, "--pwd", argv_array);
 
-        return create_archive(dst_arch, src_dir);
+            return create_archive(dest_arch, src_dir, pwd);
+        }
+
+        printf("No password provided. Exiting.\n");
+        return 1;
     } else if (argparse_has_flag(args, "--unpack")) {
-        const char *arch_path = args->arguments.data[0];
-        const char *dst_dir = args->arguments.data[1];
+        const char *arch_path = argparse_get_flag_value(args, "--unpack", argv_array);
+        const char *dst_dir = argparse_get_flag_value(args, "--dest-dir", argv_array);
+        const char *pwd = argparse_get_flag_value(args, "--pwd", argv_array);
 
-        return extract_archive(arch_path, dst_dir);
+        return extract_archive(arch_path, dst_dir, pwd);
     } else if (argparse_has_flag(args, "--get-entries")) {
         const char *path = argparse_get_flag_value(args, "--get-entries", argv_array);
+        const char *pwd = argparse_get_flag_value(args, "--pwd", argv_array);
 
         printf("Reading archive: %s\n", path);
 
         archive_context_t contex;
-        if (load_archive(path, "rb", &contex) != 0) {
+        if (load_archive(path, "rb", pwd, &contex) != 0) {
             printf("Error while loading archive.\n");
             return 1;
         }
@@ -76,9 +84,12 @@ int handle_arguments(Args *args, StringArray *argv_array) {
 void print_help() {
     printf("Usage: %s [OPTIONS]\n\n", TOOL_NAME);
     printf("Options:\n");
-    printf("  --pack <src_dir> <dst_arch>    Create a new archive from a directory.\n");
-    printf("  --unpack <arch_path> <dst_dir> Extract an existing archive to a directory.\n");
-    printf("  --get-entries <arch_path>      List all files and directories within an archive.\n");
+    printf("  --pack <src_dir>               Create a new archive from a directory.\n");
+    printf("  --unpack <archive_path>        Extract an existing archive to a directory.\n");
+    printf("  --dest-dir <dest_dir>          The destination directory.\n");
+    printf("  --pwd <password>               The password for the archive.\n");
+    printf("  --get-entries <archive_path>   List all files and directories within an archive.\n");
+    printf("  --version, -v                  Display version information and exit.\n");
     printf("  --help, -h                     Display this help message and exit.\n");
     printf("\nExample:\n");
     printf("  %s --pack ./my_files backup.sec\n", TOOL_NAME);

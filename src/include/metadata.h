@@ -8,6 +8,4 @@
 #define VERSION_MINOR 0
 #define VERSION_PATCH 1
 
-#define ARCHIVE_VER 3
-
 #endif // METADATA_H

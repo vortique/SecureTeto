@@ -36,11 +36,7 @@ endif
 all: setup $(TARGET)
 
 setup:
-ifeq ($(OS), Windows_NT)
-	mkdir $(BIN_DIR) $(OBJ_DIR) $(LIB_DIR) 2>nul || exit 0
-else
 	mkdir -p $(BIN_DIR) $(OBJ_DIR) $(LIB_DIR)
-endif
 
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
